@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /*
  * Copyright (c) 2016-present Invertase Limited & Contributors
  *
@@ -15,437 +16,413 @@
  *
  */
 
-import {
-  isAndroid,
-  isBoolean,
-  isString,
-  isNull,
-  isValidUrl,
-} from '@react-native-firebase/app/lib/common';
-import {
-  createModuleNamespace,
-  FirebaseModule,
-  getFirebaseRoot,
-} from '@react-native-firebase/app/lib/internal';
-import ConfirmationResult from './ConfirmationResult';
-import PhoneAuthListener from './PhoneAuthListener';
-import EmailAuthProvider from './providers/EmailAuthProvider';
-import FacebookAuthProvider from './providers/FacebookAuthProvider';
-import GithubAuthProvider from './providers/GithubAuthProvider';
-import GoogleAuthProvider from './providers/GoogleAuthProvider';
-import OAuthProvider from './providers/OAuthProvider';
-import OIDCAuthProvider from './providers/OIDCAuthProvider';
-import PhoneAuthProvider from './providers/PhoneAuthProvider';
-import PhoneMultiFactorGenerator from './PhoneMultiFactorGenerator';
-import TwitterAuthProvider from './providers/TwitterAuthProvider';
-import AppleAuthProvider from './providers/AppleAuthProvider';
-import Settings from './Settings';
-import User from './User';
-import version from './version';
-import { getMultiFactorResolver } from './getMultiFactorResolver';
-import { multiFactor, MultiFactorUser } from './multiFactor';
+import { firebase } from '..';
 
-const statics = {
-  AppleAuthProvider,
-  EmailAuthProvider,
-  PhoneAuthProvider,
-  GoogleAuthProvider,
-  GithubAuthProvider,
-  TwitterAuthProvider,
-  FacebookAuthProvider,
-  PhoneMultiFactorGenerator,
-  OAuthProvider,
-  OIDCAuthProvider,
-  PhoneAuthState: {
-    CODE_SENT: 'sent',
-    AUTO_VERIFY_TIMEOUT: 'timeout',
-    AUTO_VERIFIED: 'verified',
-    ERROR: 'error',
-  },
-  getMultiFactorResolver,
-  multiFactor,
-};
-
-const namespace = 'auth';
-
-const nativeModuleName = 'RNFBAuthModule';
-
-class FirebaseAuthModule extends FirebaseModule {
-  constructor(...args) {
-    super(...args);
-    this._user = null;
-    this._settings = null;
-    this._authResult = false;
-    this._languageCode = this.native.APP_LANGUAGE[this.app._name];
-    this._tenantId = null;
-
-    if (!this.languageCode) {
-      this._languageCode = this.native.APP_LANGUAGE['[DEFAULT]'];
-    }
-
-    if (this.native.APP_USER[this.app._name]) {
-      this._setUser(this.native.APP_USER[this.app._name]);
-    }
-
-    this.emitter.addListener(this.eventNameForApp('auth_state_changed'), event => {
-      this._setUser(event.user);
-      this.emitter.emit(this.eventNameForApp('onAuthStateChanged'), this._user);
-    });
-
-    this.emitter.addListener(this.eventNameForApp('phone_auth_state_changed'), event => {
-      const eventKey = `phone:auth:${event.requestKey}:${event.type}`;
-      this.emitter.emit(eventKey, event.state);
-    });
-
-    this.emitter.addListener(this.eventNameForApp('auth_id_token_changed'), auth => {
-      this._setUser(auth.user);
-      this.emitter.emit(this.eventNameForApp('onIdTokenChanged'), this._user);
-    });
-
-    this.native.addAuthStateListener();
-    this.native.addIdTokenListener();
-  }
-
-  get languageCode() {
-    return this._languageCode;
-  }
-
-  get tenantId() {
-    return this._tenantId;
-  }
-
-  get settings() {
-    if (!this._settings) {
-      this._settings = new Settings(this);
-    }
-    return this._settings;
-  }
-
-  get currentUser() {
-    return this._user;
-  }
-
-  _setUser(user) {
-    this._user = user ? new User(this, user) : null;
-    this._authResult = true;
-    this.emitter.emit(this.eventNameForApp('onUserChanged'), this._user);
-    return this._user;
-  }
-
-  _setUserCredential(userCredential) {
-    const user = new User(this, userCredential.user);
-    this._user = user;
-    this._authResult = true;
-    this.emitter.emit(this.eventNameForApp('onUserChanged'), this._user);
+/*
+ * Returns the Auth instance associated with the provided FirebaseApp.
+ *
+ * If no instance exists, initializes an Auth instance with platform-specific default dependencies.
+ */
+export function getAuth(app) {
+  if (app) {
     return {
-      additionalUserInfo: userCredential.additionalUserInfo,
-      user,
+      app: firebase.app(app.name),
+      config: firebase.app(app.name).auth().config,
+      currentUser: firebase.app(app.name).auth().currentUser,
+      languageCode: firebase.app(app.name).auth().languageCode,
+      settings: firebase.app(app.name).auth().settings,
+      tenantId: firebase.app(app.name).auth().tenantId,
     };
   }
-
-  async setLanguageCode(code) {
-    if (!isString(code) && !isNull(code)) {
-      throw new Error(
-        "firebase.auth().setLanguageCode(*) expected 'languageCode' to be a string or null value",
-      );
-    }
-
-    await this.native.setLanguageCode(code);
-
-    if (code === null) {
-      this._languageCode = this.native.APP_LANGUAGE[this.app._name];
-
-      if (!this.languageCode) {
-        this._languageCode = this.native.APP_LANGUAGE['[DEFAULT]'];
-      }
-    } else {
-      this._languageCode = code;
-    }
-  }
-
-  async setTenantId(tenantId) {
-    if (!isString(tenantId)) {
-      throw new Error("firebase.auth().setTenantId(*) expected 'tenantId' to be a string");
-    }
-    this._tenantId = tenantId;
-    await this.native.setTenantId(tenantId);
-  }
-
-  _parseListener(listenerOrObserver) {
-    return typeof listenerOrObserver === 'object'
-      ? listenerOrObserver.next.bind(listenerOrObserver)
-      : listenerOrObserver;
-  }
-
-  onAuthStateChanged(listenerOrObserver) {
-    const listener = this._parseListener(listenerOrObserver);
-    const subscription = this.emitter.addListener(
-      this.eventNameForApp('onAuthStateChanged'),
-      listener,
-    );
-
-    if (this._authResult) {
-      Promise.resolve().then(() => {
-        listener(this._user || null);
-      });
-    }
-    return () => subscription.remove();
-  }
-
-  onIdTokenChanged(listenerOrObserver) {
-    const listener = this._parseListener(listenerOrObserver);
-    const subscription = this.emitter.addListener(
-      this.eventNameForApp('onIdTokenChanged'),
-      listener,
-    );
-
-    if (this._authResult) {
-      Promise.resolve().then(() => {
-        listener(this._user || null);
-      });
-    }
-    return () => subscription.remove();
-  }
-
-  onUserChanged(listenerOrObserver) {
-    const listener = this._parseListener(listenerOrObserver);
-    const subscription = this.emitter.addListener(this.eventNameForApp('onUserChanged'), listener);
-    if (this._authResult) {
-      Promise.resolve().then(() => {
-        listener(this._user || null);
-      });
-    }
-
-    return () => {
-      subscription.remove();
-    };
-  }
-
-  signOut() {
-    return this.native.signOut().then(() => {
-      this._setUser();
-    });
-  }
-
-  signInAnonymously() {
-    return this.native
-      .signInAnonymously()
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  signInWithPhoneNumber(phoneNumber, forceResend) {
-    if (isAndroid) {
-      return this.native
-        .signInWithPhoneNumber(phoneNumber, forceResend || false)
-        .then(result => new ConfirmationResult(this, result.verificationId));
-    }
-
-    return this.native
-      .signInWithPhoneNumber(phoneNumber)
-      .then(result => new ConfirmationResult(this, result.verificationId));
-  }
-
-  verifyPhoneNumber(phoneNumber, autoVerifyTimeoutOrForceResend, forceResend) {
-    let _forceResend = forceResend;
-    let _autoVerifyTimeout = 60;
-
-    if (isBoolean(autoVerifyTimeoutOrForceResend)) {
-      _forceResend = autoVerifyTimeoutOrForceResend;
-    } else {
-      _autoVerifyTimeout = autoVerifyTimeoutOrForceResend;
-    }
-
-    return new PhoneAuthListener(this, phoneNumber, _autoVerifyTimeout, _forceResend);
-  }
-
-  verifyPhoneNumberWithMultiFactorInfo(multiFactorHint, session) {
-    return this.native.verifyPhoneNumberWithMultiFactorInfo(multiFactorHint.uid, session);
-  }
-
-  verifyPhoneNumberForMultiFactor(phoneInfoOptions) {
-    const { phoneNumber, session } = phoneInfoOptions;
-    return this.native.verifyPhoneNumberForMultiFactor(phoneNumber, session);
-  }
-
-  resolveMultiFactorSignIn(session, verificationId, verificationCode) {
-    return this.native
-      .resolveMultiFactorSignIn(session, verificationId, verificationCode)
-      .then(userCredential => {
-        return this._setUserCredential(userCredential);
-      });
-  }
-
-  createUserWithEmailAndPassword(email, password) {
-    return this.native
-      .createUserWithEmailAndPassword(email, password)
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  signInWithEmailAndPassword(email, password) {
-    return this.native
-      .signInWithEmailAndPassword(email, password)
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  signInWithCustomToken(customToken) {
-    return this.native
-      .signInWithCustomToken(customToken)
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  signInWithCredential(credential) {
-    return this.native
-      .signInWithCredential(credential.providerId, credential.token, credential.secret)
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  sendPasswordResetEmail(email, actionCodeSettings = null) {
-    return this.native.sendPasswordResetEmail(email, actionCodeSettings);
-  }
-
-  sendSignInLinkToEmail(email, actionCodeSettings = {}) {
-    return this.native.sendSignInLinkToEmail(email, actionCodeSettings);
-  }
-
-  isSignInWithEmailLink(emailLink) {
-    return (
-      typeof emailLink === 'string' &&
-      (emailLink.includes('mode=signIn') || emailLink.includes('mode%3DsignIn')) &&
-      (emailLink.includes('oobCode=') || emailLink.includes('oobCode%3D'))
-    );
-  }
-
-  signInWithEmailLink(email, emailLink) {
-    return this.native
-      .signInWithEmailLink(email, emailLink)
-      .then(userCredential => this._setUserCredential(userCredential));
-  }
-
-  confirmPasswordReset(code, newPassword) {
-    return this.native.confirmPasswordReset(code, newPassword);
-  }
-
-  applyActionCode(code) {
-    return this.native.applyActionCode(code).then(user => {
-      this._setUser(user);
-    });
-  }
-
-  checkActionCode(code) {
-    return this.native.checkActionCode(code);
-  }
-
-  fetchSignInMethodsForEmail(email) {
-    return this.native.fetchSignInMethodsForEmail(email);
-  }
-
-  verifyPasswordResetCode(code) {
-    return this.native.verifyPasswordResetCode(code);
-  }
-
-  useUserAccessGroup(userAccessGroup) {
-    if (isAndroid) {
-      return Promise.resolve();
-    }
-    return this.native.useUserAccessGroup(userAccessGroup);
-  }
-
-  getRedirectResult() {
-    throw new Error(
-      'firebase.auth().getRedirectResult() is unsupported by the native Firebase SDKs.',
-    );
-  }
-
-  setPersistence() {
-    throw new Error('firebase.auth().setPersistence() is unsupported by the native Firebase SDKs.');
-  }
-
-  signInWithPopup() {
-    throw new Error(
-      'firebase.auth().signInWithPopup() is unsupported by the native Firebase SDKs.',
-    );
-  }
-
-  signInWithRedirect() {
-    throw new Error(
-      'firebase.auth().signInWithRedirect() is unsupported by the native Firebase SDKs.',
-    );
-  }
-
-  // firebase issue - https://github.com/invertase/react-native-firebase/pull/655#issuecomment-349904680
-  useDeviceLanguage() {
-    throw new Error(
-      'firebase.auth().useDeviceLanguage() is unsupported by the native Firebase SDKs.',
-    );
-  }
-
-  useEmulator(url) {
-    if (!url || !isString(url) || !isValidUrl(url)) {
-      throw new Error('firebase.auth().useEmulator() takes a non-empty string URL');
-    }
-
-    let _url = url;
-    const androidBypassEmulatorUrlRemap =
-      typeof this.firebaseJson.android_bypass_emulator_url_remap === 'boolean' &&
-      this.firebaseJson.android_bypass_emulator_url_remap;
-    if (!androidBypassEmulatorUrlRemap && isAndroid && _url) {
-      if (_url.startsWith('http://localhost')) {
-        _url = _url.replace('http://localhost', 'http://10.0.2.2');
-        // eslint-disable-next-line no-console
-        console.log(
-          'Mapping auth host "localhost" to "10.0.2.2" for android emulators. Use real IP on real devices. You can bypass this behaviour with "android_bypass_emulator_url_remap" flag.',
-        );
-      }
-      if (_url.startsWith('http://127.0.0.1')) {
-        _url = _url.replace('http://127.0.0.1', 'http://10.0.2.2');
-        // eslint-disable-next-line no-console
-        console.log(
-          'Mapping auth host "127.0.0.1" to "10.0.2.2" for android emulators. Use real IP on real devices. You can bypass this behaviour with "android_bypass_emulator_url_remap" flag.',
-        );
-      }
-    }
-
-    // Native calls take the host and port split out
-    const hostPortRegex = /^http:\/\/([\w\d-.]+):(\d+)$/;
-    const urlMatches = _url.match(hostPortRegex);
-    if (!urlMatches) {
-      throw new Error('firebase.auth().useEmulator() unable to parse host and port from URL');
-    }
-    const host = urlMatches[1];
-    const port = parseInt(urlMatches[2], 10);
-    this.native.useEmulator(host, port);
-    return [host, port]; // undocumented return, useful for unit testing
-  }
-
-  getMultiFactorResolver(error) {
-    return getMultiFactorResolver(this, error);
-  }
-
-  multiFactor(user) {
-    if (user.userId !== this.currentUser.userId) {
-      throw new Error('firebase.auth().multiFactor() only operates on currentUser');
-    }
-    return new MultiFactorUser(this, user);
-  }
+  return {
+    app: firebase.app(),
+    config: firebase.app().auth().config,
+    currentUser: firebase.app().auth().currentUser,
+    languageCode: firebase.app().auth().languageCode,
+    settings: firebase.app().auth().settings,
+    tenantId: firebase.app().auth().tenantId,
+  };
 }
 
-// import { SDK_VERSION } from '@react-native-firebase/auth';
-export const SDK_VERSION = version;
+function _getUnderlyingAuth(auth) {
+  return auth.app.auth();
+}
 
-// import auth from '@react-native-firebase/auth';
-// auth().X(...);
-export default createModuleNamespace({
-  statics,
-  version,
-  namespace,
-  nativeModuleName,
-  nativeEvents: ['auth_state_changed', 'auth_id_token_changed', 'phone_auth_state_changed'],
-  hasMultiAppSupport: true,
-  hasCustomUrlOrRegionSupport: false,
-  ModuleClass: FirebaseAuthModule,
-});
+/*
+ * This function allows more control over the Auth instance than getAuth().
+ *
+ * getAuth uses platform-specific defaults to supply the Dependencies.
+ * In general, getAuth is the easiest way to initialize Auth and works for most use cases.
+ * Use initializeAuth if you need control over which persistence layer is used, or to minimize bundle size
+ * if you're not using either signInWithPopup or signInWithRedirect.
+ */
+export function initializeAuth(app, deps) {
+  return getAuth(app);
+}
 
-// import auth, { firebase } from '@react-native-firebase/auth';
-// auth().X(...);
-// firebase.auth().X(...);
-export const firebase = getFirebaseRoot();
+/*
+ * Applies a verification code sent to the user by email or other out-of-band mechanism.
+ *
+ * Returns a promise that resolves when the code is applied successfully.
+ */
+export async function applyActionCode(auth, oobCode) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.applyActionCode(oobCode);
+}
+
+/*
+ * Adds a blocking callback that runs before an auth state change sets a new user.
+ */
+export function beforeAuthStateChanged(auth, callback, onAbort) {
+  throw new Error('beforeAuthStateChanged is not implemented on React Native');
+}
+
+/*
+ * Checks a verification code sent to the user by email or other out-of-band mechanism.
+ */
+export async function checkActionCode(auth, oobCode) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.checkActionCode(oobCode);
+}
+
+/*
+ * Completes the password reset process, given a confirmation code and new password.
+ */
+export async function confirmPasswordReset(auth, oobCode, newPassword) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.confirmPasswordReset(oobCode, newPassword);
+}
+
+/*
+ * Changes the Auth instance to communicate with the Firebase Auth Emulator, instead of production Firebase Auth services.
+ *
+ * This must be called synchronously immediately following the first call to initializeAuth(). Do not use with production credentials as emulator traffic is not encrypted.
+ */
+export function connectAuthEmulator(auth, url, options) {
+  const _auth = _getUnderlyingAuth(auth);
+  _auth.useEmulator(url, options);
+}
+
+/*
+ * Creates a new user account associated with the specified email address and password.
+ */
+export async function createUserWithEmailAndPassword(auth, email, password) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.createUserWithEmailAndPassword(email, password);
+}
+
+/*
+ * Gets the list of possible sign in methods for the given email address.
+ */
+export async function fetchSignInMethodsForEmail(auth, email) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.fetchSignInMethodsForEmail(email);
+}
+
+/*
+ * Provides a MultiFactorResolver suitable for completion of a multi-factor flow.
+ */
+export function getMultiFactorResolver(auth, error) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.getMultiFactorResolver(error);
+}
+
+/*
+ * Returns a UserCredential from the redirect-based sign-in flow.
+ */
+export async function getRedirectResult(auth, resolver) {
+  throw new Error('getRedirectResult is not implemented on React Native');
+}
+
+/*
+ * Checks if an incoming link is a sign-in with email link suitable for signInWithEmailLink().
+ */
+export function isSignInWithEmailLink(auth, emailLink) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.isSignInWithEmailLink(emailLink);
+}
+
+/*
+ * Adds an observer for changes to the user's sign-in state.
+ */
+export function onAuthStateChanged(auth, nextOrObserver) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.onAuthStateChanged(nextOrObserver);
+}
+
+/*
+ * Adds an observer for changes to the signed-in user's ID token.
+ */
+export function onIdTokenChanged(auth, nextOrObserver) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.onIdTokenChanged(nextOrObserver);
+}
+
+/*
+ * Sends a password reset email to the given email address.
+ */
+export async function sendPasswordResetEmail(auth, email, actionCodeSettings) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.sendPasswordResetEmail(email, actionCodeSettings);
+}
+
+/*
+ * Sends a sign-in email link to the user with the specified email.
+ */
+export async function sendSignInLinkToEmail(auth, email, actionCodeSettings) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.sendSignInLinkToEmail(email, actionCodeSettings);
+}
+
+/*
+ * Changes the type of persistence on the Auth instance for the currently saved Auth session and applies this type of persistence for future sign-in requests, including sign-in with redirect requests.
+ */
+export async function setPersistence(auth, persistence) {
+  throw new Error('setPersistence is not implemented on React Native');
+}
+
+/*
+ * Asynchronously signs in as an anonymous user.
+ */
+export async function signInAnonymously(auth) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInAnonymously();
+}
+
+/*
+ * Asynchronously signs in with the given credentials.
+ */
+export async function signInWithCredential(auth, credential) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInWithCredential(credential);
+}
+
+/*
+ * Asynchronously signs in using a custom token.
+ */
+export async function signInWithCustomToken(auth, customToken) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInWithCustomToken(customToken);
+}
+
+/*
+ * Asynchronously signs in using an email and password.
+ */
+export async function signInWithEmailAndPassword(auth, email, password) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInWithEmailAndPassword(email, password);
+}
+
+/*
+ * Asynchronously signs in using an email and sign-in email link.
+ */
+export async function signInWithEmailLink(auth, email, emailLink) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInWithEmailLink(email, emailLink);
+}
+
+/*
+Asynchronously signs in using a phone number.
+*/
+export async function signInWithPhoneNumber(auth, phoneNumber, appVerifier) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signInWithPhoneNumber(phoneNumber);
+}
+
+/*
+Authenticates a Firebase client using a popup-based OAuth authentication flow.
+*/
+export async function signInWithPopup(auth, provider, resolver) {
+  throw new Error('signInWithPopup is not implemented on React Native');
+}
+
+/*
+Authenticates a Firebase client using a full-page redirect flow.
+*/
+export async function signInWithRedirect(auth, provider, resolver) {
+  throw new Error('signInWithRedirect is not implemented on React Native');
+}
+
+/*
+Signs out the current user.
+*/
+export async function signOut(auth) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.signOut();
+}
+
+/*
+Asynchronously sets the provided user as Auth.currentUser on the Auth instance.
+*/
+export async function updateCurrentUser(auth, user) {
+  throw new Error('updateCurrentUser is not implemented on React Native');
+}
+
+/*
+Sets the current language to the default device/browser preference.
+*/
+export function useDeviceLanguage(auth) {
+  throw new Error('useDeviceLanguage is not implemented on React Native');
+}
+
+/*
+Verifies the password reset code sent to the user by email or other out-of-band mechanism.
+*/
+export async function verifyPasswordResetCode(auth, code) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.verifyPasswordResetCode(code);
+}
+
+/*
+ * Parses the email action link string and returns an ActionCodeURL if the link is valid, otherwise returns null.
+ */
+export function parseActionCodeURL(link) {
+  throw new Error('parseActionCodeURL is not implemented on React Native');
+}
+
+/*
+ * Deletes and signs out the user.
+ */
+export async function deleteUser(user) {
+  return user.delete();
+}
+
+/*
+ * Returns a JSON Web Token (JWT) used to identify the user to a Firebase service.
+ */
+export async function getIdToken(user, forceRefresh) {
+  return user.getIdToken(forceRefresh);
+}
+
+/*
+ * Returns a deserialized JSON Web Token (JWT) used to identify the user to a Firebase service.
+ */
+export async function getIdTokenResult(user, forceRefresh) {
+  return user.getIdTokenResult(forceRefresh);
+}
+
+/*
+ * Links the user account with the given credentials.
+ */
+export async function linkWithCredential(user, credential) {
+  return user.linkWithCredential(credential);
+}
+
+/*
+ * Links the user account with the given phone number.
+ */
+export async function linkWithPhoneNumber(user, phoneNumber, appVerifier) {
+  throw new Error('linkWithPhoneNumber is not implemented on React Native');
+}
+
+/*
+ * Links the authenticated provider to the user account using a pop-up based OAuth flow.
+ */
+export async function linkWithPopup(user, provider, resolver) {
+  throw new Error('linkWithPopup is not implemented on React Native');
+}
+
+/*
+ * Links the OAuthProvider to the user account using a full-page redirect flow.
+ */
+export async function linkWithRedirect(user, provider, resolver) {
+  throw new Error('linkWithRedirect is not implemented on React Native');
+}
+
+/*
+ * The MultiFactorUser corresponding to the user.
+ */
+export function multiFactor(user) {
+  return user.multiFactor;
+}
+
+/*
+ * Re-authenticates a user using a fresh credential.
+ */
+export async function reauthenticateWithCredential(user, credential) {
+  return user.reauthenticateWithCredential(credential);
+}
+
+/*
+ * Re-authenticates a user using a fresh phone credential.
+ */
+export async function reauthenticateWithPhoneNumber(user, phoneNumber, appVerifier) {
+  throw new Error('reauthenticateWithPhoneNumber is not implemented on React Native');
+}
+
+/*
+ * Reauthenticates the current user with the specified OAuthProvider using a pop-up based OAuth flow.
+ */
+export async function reauthenticateWithPopup(user, provider, resolver) {
+  throw new Error('reauthenticateWithPopup is not implemented on React Native');
+}
+
+/*
+ * Reauthenticates the current user with the specified OAuthProvider using a full-page redirect flow.
+ */
+export async function reauthenticateWithRedirect(user, provider, resolver) {
+  throw new Error('reauthenticateWithRedirect is not implemented on React Native');
+}
+
+/*
+ * Reloads user account data, if signed in.
+ */
+export async function reload(user) {
+  return user.reload();
+}
+
+/*
+ * Sends a verification email to a user.
+ */
+export async function sendEmailVerification(user, actionCodeSettings) {
+  return user.sendEmailVerification(actionCodeSettings);
+}
+
+/*
+ * Unlinks a provider from a user account.
+ */
+export async function unlink(user, providerId) {
+  return user.unlink(providerId);
+}
+
+/*
+ * Updates the user's email address.
+ */
+export async function updateEmail(user, newEmail) {
+  return user.updateEmail(newEmail);
+}
+
+/*
+ * Updates the user's password.
+ */
+export async function updatePassword(user, newPassword) {
+  return user.updatePassword(newPassword);
+}
+
+/*
+ * Updates the user's phone number.
+ */
+export async function updatePhoneNumber(user, credential) {
+  return user.updatePhoneNumber(credential);
+}
+
+/*
+ * Updates a user's profile data.
+ */
+export async function updateProfile(user, { displayName, photoURL: photoUrl }) {
+  return user.updateProfile({ displayName, photoURL: photoUrl });
+}
+
+/*
+ * Sends a verification email to a new email address.
+ */
+export async function verifyBeforeUpdateEmail(user, newEmail, actionCodeSettings) {
+  return user.verifyBeforeUpdateEmail(newEmail, actionCodeSettings);
+}
+
+/*
+ * Extracts provider specific AdditionalUserInfo for the given credential.
+ */
+export function getAdditionalUserInfo(userCredential) {
+  return userCredential.additionalUserInfo;
+}
