@@ -18,8 +18,8 @@
 import {
   isAndroid,
   isBoolean,
-  isString,
   isNull,
+  isString,
   isValidUrl,
 } from '@react-native-firebase/app/lib/common';
 import {
@@ -28,7 +28,11 @@ import {
   getFirebaseRoot,
 } from '@react-native-firebase/app/lib/internal';
 import ConfirmationResult from './ConfirmationResult';
+import { getMultiFactorResolver } from './getMultiFactorResolver';
+import { multiFactor, MultiFactorUser } from './multiFactor';
 import PhoneAuthListener from './PhoneAuthListener';
+import PhoneMultiFactorGenerator from './PhoneMultiFactorGenerator';
+import AppleAuthProvider from './providers/AppleAuthProvider';
 import EmailAuthProvider from './providers/EmailAuthProvider';
 import FacebookAuthProvider from './providers/FacebookAuthProvider';
 import GithubAuthProvider from './providers/GithubAuthProvider';
@@ -36,14 +40,71 @@ import GoogleAuthProvider from './providers/GoogleAuthProvider';
 import OAuthProvider from './providers/OAuthProvider';
 import OIDCAuthProvider from './providers/OIDCAuthProvider';
 import PhoneAuthProvider from './providers/PhoneAuthProvider';
-import PhoneMultiFactorGenerator from './PhoneMultiFactorGenerator';
 import TwitterAuthProvider from './providers/TwitterAuthProvider';
-import AppleAuthProvider from './providers/AppleAuthProvider';
 import Settings from './Settings';
 import User from './User';
 import version from './version';
-import { getMultiFactorResolver } from './getMultiFactorResolver';
-import { multiFactor, MultiFactorUser } from './multiFactor';
+
+export {
+  applyActionCode,
+  beforeAuthStateChanged,
+  checkActionCode,
+  confirmPasswordReset,
+  connectAuthEmulator,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  fetchSignInMethodsForEmail,
+  function,
+  function,
+  function,
+  function,
+  function,
+  function,
+  getAdditionalUserInfo,
+  getAuth,
+  getIdToken,
+  getIdTokenResult,
+  getMultiFactorResolver,
+  getReactNativePersistence,
+  getRedirectResult,
+  initializeAuth,
+  isSignInWithEmailLink,
+  linkWithCredential,
+  linkWithPhoneNumber,
+  linkWithPopup,
+  linkWithRedirect,
+  multiFactor,
+  onAuthStateChanged,
+  onIdTokenChanged,
+  parseActionCodeURL,
+  reauthenticateWithCredential,
+  reauthenticateWithPhoneNumber,
+  reauthenticateWithPopup,
+  reauthenticateWithRedirect,
+  reload,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  sendSignInLinkToEmail,
+  setPersistence,
+  signInAnonymously,
+  signInWithCredential,
+  signInWithCustomToken,
+  signInWithEmailAndPassword,
+  signInWithEmailLink,
+  signInWithPhoneNumber,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  unlink,
+  updateCurrentUser,
+  updateEmail,
+  updatePassword,
+  updatePhoneNumber,
+  updateProfile,
+  useDeviceLanguage,
+  verifyBeforeUpdateEmail,
+  verifyPasswordResetCode,
+} from './modular/index';
 
 const statics = {
   AppleAuthProvider,
