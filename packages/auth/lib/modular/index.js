@@ -20,28 +20,40 @@ import { firebase } from '..';
 
 /*
  * Returns the Auth instance associated with the provided FirebaseApp.
+ */
+class Auth {
+  constructor(app) {
+    this.app = app ? firebase.app(app.name) : firebase.app();
+  }
+
+  get config() {
+    return this.app.auth().config;
+  }
+
+  get currentUser() {
+    return this.app.auth().currentUser;
+  }
+
+  get languageCode() {
+    return this.app.auth().languageCode;
+  }
+
+  get settings() {
+    return this.app.auth().settings;
+  }
+
+  get tenantId() {
+    return this.app.auth().tenantId;
+  }
+}
+
+/*
+ * Returns the Auth instance associated with the provided FirebaseApp.
  *
  * If no instance exists, initializes an Auth instance with platform-specific default dependencies.
  */
 export function getAuth(app) {
-  if (app) {
-    return {
-      app: firebase.app(app.name),
-      config: firebase.app(app.name).auth().config,
-      currentUser: firebase.app(app.name).auth().currentUser,
-      languageCode: firebase.app(app.name).auth().languageCode,
-      settings: firebase.app(app.name).auth().settings,
-      tenantId: firebase.app(app.name).auth().tenantId,
-    };
-  }
-  return {
-    app: firebase.app(),
-    config: firebase.app().auth().config,
-    currentUser: firebase.app().auth().currentUser,
-    languageCode: firebase.app().auth().languageCode,
-    settings: firebase.app().auth().settings,
-    tenantId: firebase.app().auth().tenantId,
-  };
+  return new Auth(app);
 }
 
 function _getUnderlyingAuth(auth) {
@@ -74,7 +86,7 @@ export async function applyActionCode(auth, oobCode) {
  * Adds a blocking callback that runs before an auth state change sets a new user.
  */
 export function beforeAuthStateChanged(auth, callback, onAbort) {
-  throw new Error('beforeAuthStateChanged is not implemented on React Native');
+  throw new Error('beforeAuthStateChanged is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -131,7 +143,7 @@ export function getMultiFactorResolver(auth, error) {
  * Returns a UserCredential from the redirect-based sign-in flow.
  */
 export async function getRedirectResult(auth, resolver) {
-  throw new Error('getRedirectResult is not implemented on React Native');
+  throw new Error('getRedirectResult is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -178,7 +190,7 @@ export async function sendSignInLinkToEmail(auth, email, actionCodeSettings) {
  * Changes the type of persistence on the Auth instance for the currently saved Auth session and applies this type of persistence for future sign-in requests, including sign-in with redirect requests.
  */
 export async function setPersistence(auth, persistence) {
-  throw new Error('setPersistence is not implemented on React Native');
+  throw new Error('setPersistence is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -233,14 +245,14 @@ export async function signInWithPhoneNumber(auth, phoneNumber, appVerifier) {
 Authenticates a Firebase client using a popup-based OAuth authentication flow.
 */
 export async function signInWithPopup(auth, provider, resolver) {
-  throw new Error('signInWithPopup is not implemented on React Native');
+  throw new Error('signInWithPopup is unsupported by the native Firebase SDKs');
 }
 
 /*
 Authenticates a Firebase client using a full-page redirect flow.
 */
 export async function signInWithRedirect(auth, provider, resolver) {
-  throw new Error('signInWithRedirect is not implemented on React Native');
+  throw new Error('signInWithRedirect is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -255,14 +267,14 @@ export async function signOut(auth) {
 Asynchronously sets the provided user as Auth.currentUser on the Auth instance.
 */
 export async function updateCurrentUser(auth, user) {
-  throw new Error('updateCurrentUser is not implemented on React Native');
+  throw new Error('updateCurrentUser is unsupported by the native Firebase SDKs');
 }
 
 /*
 Sets the current language to the default device/browser preference.
 */
 export function useDeviceLanguage(auth) {
-  throw new Error('useDeviceLanguage is not implemented on React Native');
+  throw new Error('useDeviceLanguage is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -277,7 +289,7 @@ export async function verifyPasswordResetCode(auth, code) {
  * Parses the email action link string and returns an ActionCodeURL if the link is valid, otherwise returns null.
  */
 export function parseActionCodeURL(link) {
-  throw new Error('parseActionCodeURL is not implemented on React Native');
+  throw new Error('parseActionCodeURL is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -312,21 +324,21 @@ export async function linkWithCredential(user, credential) {
  * Links the user account with the given phone number.
  */
 export async function linkWithPhoneNumber(user, phoneNumber, appVerifier) {
-  throw new Error('linkWithPhoneNumber is not implemented on React Native');
+  throw new Error('linkWithPhoneNumber is unsupported by the native Firebase SDKs');
 }
 
 /*
  * Links the authenticated provider to the user account using a pop-up based OAuth flow.
  */
 export async function linkWithPopup(user, provider, resolver) {
-  throw new Error('linkWithPopup is not implemented on React Native');
+  throw new Error('linkWithPopup is unsupported by the native Firebase SDKs');
 }
 
 /*
  * Links the OAuthProvider to the user account using a full-page redirect flow.
  */
 export async function linkWithRedirect(user, provider, resolver) {
-  throw new Error('linkWithRedirect is not implemented on React Native');
+  throw new Error('linkWithRedirect is unsupported by the native Firebase SDKs');
 }
 
 /*
@@ -347,21 +359,21 @@ export async function reauthenticateWithCredential(user, credential) {
  * Re-authenticates a user using a fresh phone credential.
  */
 export async function reauthenticateWithPhoneNumber(user, phoneNumber, appVerifier) {
-  throw new Error('reauthenticateWithPhoneNumber is not implemented on React Native');
+  throw new Error('reauthenticateWithPhoneNumber is unsupported by the native Firebase SDKs');
 }
 
 /*
  * Reauthenticates the current user with the specified OAuthProvider using a pop-up based OAuth flow.
  */
 export async function reauthenticateWithPopup(user, provider, resolver) {
-  throw new Error('reauthenticateWithPopup is not implemented on React Native');
+  throw new Error('reauthenticateWithPopup is unsupported by the native Firebase SDKs');
 }
 
 /*
  * Reauthenticates the current user with the specified OAuthProvider using a full-page redirect flow.
  */
 export async function reauthenticateWithRedirect(user, provider, resolver) {
-  throw new Error('reauthenticateWithRedirect is not implemented on React Native');
+  throw new Error('reauthenticateWithRedirect is unsupported by the native Firebase SDKs');
 }
 
 /*
