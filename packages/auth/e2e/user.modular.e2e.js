@@ -973,54 +973,66 @@ describe('auth().currentUser', function () {
 
   describe('modular', function () {
     before(async function () {
+      const { getAuth, createUserWithEmailAndPassword } = authModular;
+      const auth = getAuth();
       try {
         await clearAllUsers();
       } catch (e) {
         throw e;
       }
-      firebase.auth().settings.appVerificationDisabledForTesting = true;
+      auth.settings.appVerificationDisabledForTesting = true;
       try {
-        await firebase.auth().createUserWithEmailAndPassword(TEST_EMAIL, TEST_PASS);
+        await createUserWithEmailAndPassword(auth, TEST_EMAIL, TEST_PASS);
       } catch (e) {
         // they may already exist, that's fine
       }
     });
 
     beforeEach(async function () {
-      if (firebase.auth().currentUser) {
-        await firebase.auth().signOut();
+      const { getAuth, createUserWithEmailAndPassword } = authModular;
+      const auth = getAuth();
+
+      if (auth.currentUser) {
+        await signOut(auth);
         await Utils.sleep(50);
       }
     });
 
     describe('getIdToken()', function () {
       it('should return a token', async function () {
+        const { getAuth, createUserWithEmailAndPassword, deleteUser, getIdToken } = authModular;
+        const auth = getAuth();
+
         const random = Utils.randString(12, '#aA');
         const email = `${random}@${random}.com`;
 
-        const { user } = await firebase.auth().createUserWithEmailAndPassword(email, random);
+        const { user } = await createUserWithEmailAndPassword(auth, email, random);
 
         // Test
-        const token = await user.getIdToken();
+        const token = await getIdToken(user);
 
         // Assertions
         token.should.be.a.String();
         token.length.should.be.greaterThan(24);
 
         // Clean up
-        await firebase.auth().currentUser.delete();
+        await deleteUser(currentUser);
       });
     });
 
     describe('getIdTokenResult()', function () {
       it('should return a valid IdTokenResult Object', async function () {
+        const { getAuth, createUserWithEmailAndPassword, deleteUser, getIdTokenResult } =
+          authModular;
+        const auth = getAuth();
+
         const random = Utils.randString(12, '#aA');
         const email = `${random}@${random}.com`;
 
-        const { user } = await firebase.auth().createUserWithEmailAndPassword(email, random);
+        const { user } = await createUserWithEmailAndPassword(auth, email, random);
 
         // Test
-        const tokenResult = await user.getIdTokenResult();
+        const tokenResult = await getIdTokenResult(user);
 
         tokenResult.token.should.be.a.String();
         tokenResult.authTime.should.be.a.String();
@@ -1043,29 +1055,33 @@ describe('auth().currentUser', function () {
         tokenResult.token.length.should.be.greaterThan(24);
 
         // Clean up
-        await firebase.auth().currentUser.delete();
+        await deleteUser(auth.currentUser);
       });
     });
 
     describe('linkWithCredential()', function () {
       // hanging against auth emulator?
       it('should link anonymous account <-> email account', async function () {
+        const { getAuth, signInAnonymously, deleteUser, linkWithCredential, EmailAuthProvider } =
+          authModular;
+        const auth = getAuth();
+
         const random = Utils.randString(12, '#aA');
         const email = `${random}@${random}.com`;
         const pass = random;
 
-        await firebase.auth().signInAnonymously();
-        const { currentUser } = firebase.auth();
+        await signInAnonymously(auth);
+        const { currentUser } = auth;
 
         // Test
-        const credential = firebase.auth.EmailAuthProvider.credential(email, pass);
+        const credential = EmailAuthProvider.credential(email, pass);
 
-        const linkedUserCredential = await currentUser.linkWithCredential(credential);
+        const linkedUserCredential = await linkWithCredential(currentUser, credential);
 
         // Assertions
         const linkedUser = linkedUserCredential.user;
         linkedUser.should.be.an.Object();
-        linkedUser.should.equal(firebase.auth().currentUser);
+        linkedUser.should.equal(auth.currentUser);
         linkedUser.email.toLowerCase().should.equal(email.toLowerCase());
         linkedUser.isAnonymous.should.equal(false);
         linkedUser.providerId.should.equal('firebase');
@@ -1073,20 +1089,24 @@ describe('auth().currentUser', function () {
         linkedUser.providerData.length.should.equal(1);
 
         // Clean up
-        await firebase.auth().currentUser.delete();
+        await deleteUser(currentUser);
       });
 
       it('should error on link anon <-> email if email already exists', async function () {
-        await firebase.auth().signInAnonymously();
-        const { currentUser } = firebase.auth();
+        const { getAuth, signInAnonymously, deleteUser, linkWithCredential, EmailAuthProvider } =
+          authModular;
+        const auth = getAuth();
+
+        await signInAnonymously(auth);
+        const { currentUser } = auth;
 
         // Test
         try {
-          const credential = firebase.auth.EmailAuthProvider.credential(TEST_EMAIL, TEST_PASS);
-          await currentUser.linkWithCredential(credential);
+          const credential = EmailAuthProvider.credential(TEST_EMAIL, TEST_PASS);
+          await linkWithCredential(currentUser, credential);
 
           // Clean up
-          await firebase.auth().signOut();
+          await deleteUser(currentUser);
 
           // Reject
           return Promise.reject(new Error('Did not error on link'));
@@ -1098,7 +1118,7 @@ describe('auth().currentUser', function () {
           );
 
           // Clean up
-          await firebase.auth().currentUser.delete();
+          await deleteUser(currentUser);
         }
 
         return Promise.resolve();
@@ -1107,36 +1127,48 @@ describe('auth().currentUser', function () {
 
     describe('reauthenticateWithCredential()', function () {
       it('should reauthenticate correctly', async function () {
+        const {
+          getAuth,
+          createUserWithEmailAndPassword,
+          deleteUser,
+          reauthenticateWithCredential,
+          EmailAuthProvider,
+        } = authModular;
+        const auth = getAuth();
+
         const random = Utils.randString(12, '#aA');
         const email = `${random}@${random}.com`;
         const pass = random;
 
-        await firebase.auth().createUserWithEmailAndPassword(email, pass);
+        await createUserWithEmailAndPassword(auth, email, pass);
 
         // Test
-        const credential = firebase.auth.EmailAuthProvider.credential(email, pass);
+        const credential = EmailAuthProvider.credential(email, pass);
 
-        await firebase.auth().currentUser.reauthenticateWithCredential(credential);
+        await reauthenticateWithCredential(auth.currentUser, credential);
 
         // Assertions
-        const { currentUser } = firebase.auth();
+        const { currentUser } = auth;
         currentUser.email.should.equal(email.toLowerCase());
 
         // Clean up
-        await firebase.auth().currentUser.delete();
+        await deleteUser(currentUser);
       });
     });
 
     describe('reload()', function () {
       it('should not error', async function () {
-        await firebase.auth().signInAnonymously();
+        const { getAuth, signInAnonymously, signOut, reload } = authModular;
+        const auth = getAuth();
+
+        await signInAnonymously(auth);
 
         try {
-          await firebase.auth().currentUser.reload();
-          await firebase.auth().signOut();
+          await reload(auth.currentUser);
+          await signOut(auth);
         } catch (error) {
           // Reject
-          await firebase.auth().signOut();
+          await signOut(auth);
           return Promise.reject(new Error('reload() caused an error', error));
         }
 
