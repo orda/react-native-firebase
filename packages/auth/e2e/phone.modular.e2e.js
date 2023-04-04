@@ -1,7 +1,7 @@
 // const TEST_EMAIL = 'test@test.com';
 // const TEST_PASS = 'test1234';
 
-import { clearAllUsers, getLastSmsCode, getRandomPhoneNumber } from './helpers';
+const { clearAllUsers, getLastSmsCode, getRandomPhoneNumber } = require('./helpers');
 
 describe('auth() => Phone', function () {
   describe('firebase v8 compatibility', function () {

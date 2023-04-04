@@ -16,6 +16,7 @@
  *
  */
 
+import { isString } from '@react-native-firebase/app/lib/common';
 import { firebase } from '..';
 
 /*
@@ -24,6 +25,7 @@ import { firebase } from '..';
 class Auth {
   constructor(app) {
     this.app = app ? firebase.app(app.name) : firebase.app();
+    this._languageCode = this.app.auth().languageCode;
   }
 
   get config() {
@@ -35,7 +37,17 @@ class Auth {
   }
 
   get languageCode() {
-    return this.app.auth().languageCode;
+    return this._languageCode;
+  }
+
+  set languageCode(code) {
+    if (code === null || isString(code)) {
+      this._languageCode = code;
+      this.app.auth().languageCode = code;
+      return;
+    }
+    console.log('coucou heyeyye');
+    throw new Error("expected 'languageCode' to be a string or null value");
   }
 
   get settings() {
@@ -275,6 +287,14 @@ Sets the current language to the default device/browser preference.
 */
 export function useDeviceLanguage(auth) {
   throw new Error('useDeviceLanguage is unsupported by the native Firebase SDKs');
+}
+
+/*
+ Sets the current language to the default device/browser preference.
+*/
+export function useUserAccessGroup(auth, userAccessGroup) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.useUserAccessGroup(userAccessGroup);
 }
 
 /*

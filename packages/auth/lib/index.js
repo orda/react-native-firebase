@@ -95,6 +95,7 @@ export {
   updatePhoneNumber,
   updateProfile,
   useDeviceLanguage,
+  useUserAccessGroup,
   verifyBeforeUpdateEmail,
   verifyPasswordResetCode,
 } from './modular/index';

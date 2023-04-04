@@ -1,4 +1,4 @@
-import { getLastOob, signInUser } from './helpers';
+const { getLastOob, signInUser } = require('./helpers');
 
 describe('auth() -> emailLink Provider', function () {
   beforeEach(async function () {

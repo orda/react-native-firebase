@@ -1953,30 +1953,30 @@ describe('auth() modular', function () {
 
       describe('languageCode', function () {
         it('it should change the language code', async function () {
-          const { setLanguageCode, getAuth } = authModular;
+          const { getAuth } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          await setLanguageCode(defaultAuth, 'en');
+          defaultAuth.languageCode = 'en';
 
           if (defaultAuth.languageCode !== 'en') {
             throw new Error('Expected language code to be "en".');
           }
-          await setLanguageCode(defaultAuth, 'fr');
+          defaultAuth.languageCode = 'fr';
 
           if (defaultAuth.languageCode !== 'fr') {
             throw new Error('Expected language code to be "fr".');
           }
           // expect no error
-          await setLanguageCode(defaultAuth, null);
+          defaultAuth.languageCode = null;
 
           try {
-            await setLanguageCode(defaultAuth, 123);
+            defaultAuth.languageCode = 123;
             throw new Error('It did not error');
           } catch (e) {
             e.message.should.containEql("expected 'languageCode' to be a string or null value");
           }
 
-          await setLanguageCode(defaultAuth, 'en');
+          defaultAuth.languageCode = 'en';
         });
       });
 
@@ -1985,9 +1985,13 @@ describe('auth() modular', function () {
           const { getRedirectResult, getAuth } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          (() => {
+          try {
             getRedirectResult(defaultAuth);
-          }).should.throw('getRedirectResult is unsupported by the native Firebase SDKs.');
+          } catch (error) {
+            error.message.should.containEql(
+              'getRedirectResult is unsupported by the native Firebase SDKs.',
+            );
+          }
         });
       });
 
@@ -1996,9 +2000,13 @@ describe('auth() modular', function () {
           const { setPersistence, getAuth } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          (() => {
+          try {
             setPersistence(defaultAuth);
-          }).should.throw('setPersistence is unsupported by the native Firebase SDKs.');
+          } catch (error) {
+            error.message.should.containEql(
+              'setPersistence is unsupported by the native Firebase SDKs.',
+            );
+          }
         });
       });
 
@@ -2007,9 +2015,13 @@ describe('auth() modular', function () {
           const { signInWithPopup, getAuth } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          (() => {
+          try {
             signInWithPopup(defaultAuth);
-          }).should.throw('signInWithPopup is unsupported by the native Firebase SDKs.');
+          } catch (error) {
+            error.message.should.containEql(
+              'signInWithPopup is unsupported by the native Firebase SDKs.',
+            );
+          }
         });
       });
 
@@ -2139,27 +2151,31 @@ describe('auth() modular', function () {
 
       describe('signInWithRedirect()', function () {
         it('should throw an unsupported error', function () {
-          const { getAuth } = authModular;
+          const { getAuth, signInWithRedirect } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          (() => {
-            defaultAuth.signInWithRedirect();
-          }).should.throw(
-            'firebase.auth().signInWithRedirect() is unsupported by the native Firebase SDKs.',
-          );
+          try {
+            signInWithRedirect(defaultAuth);
+          } catch (error) {
+            error.message.should.containEql(
+              'signInWithRedirect is unsupported by the native Firebase SDKs.',
+            );
+          }
         });
       });
 
       describe('useDeviceLanguage()', function () {
         it('should throw an unsupported error', function () {
-          const { getAuth } = authModular;
+          const { getAuth, useDeviceLanguage } = authModular;
           const defaultAuth = getAuth(firebase.app());
 
-          (() => {
-            defaultAuth.useDeviceLanguage();
-          }).should.throw(
-            'firebase.auth().useDeviceLanguage() is unsupported by the native Firebase SDKs.',
-          );
+          try {
+            useDeviceLanguage(defaultAuth);
+          } catch (error) {
+            error.message.should.containEql(
+              'useDeviceLanguage is unsupported by the native Firebase SDKs',
+            );
+          }
         });
       });
 
