@@ -1092,8 +1092,7 @@ describe('auth().currentUser', function () {
       });
 
       it('should error on link anon <-> email if email already exists', async function () {
-        const { getAuth, signInAnonymously, deleteUser, linkWithCredential, EmailAuthProvider } =
-          authModular;
+        const { getAuth, signInAnonymously, deleteUser, linkWithCredential } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);

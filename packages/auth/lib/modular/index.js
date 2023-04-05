@@ -46,7 +46,6 @@ class Auth {
       this.app.auth().languageCode = code;
       return;
     }
-    console.log('coucou heyeyye');
     throw new Error("expected 'languageCode' to be a string or null value");
   }
 
