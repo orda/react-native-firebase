@@ -246,11 +246,19 @@ export async function signInWithEmailLink(auth, email, emailLink) {
 }
 
 /*
-Asynchronously signs in using a phone number.
-*/
+ * Asynchronously signs in using a phone number.
+ */
 export async function signInWithPhoneNumber(auth, phoneNumber, appVerifier) {
   const _auth = _getUnderlyingAuth(auth);
   return _auth.signInWithPhoneNumber(phoneNumber);
+}
+
+/*
+ * Asynchronously signs in using a phone number.
+ */
+export function verifyPhoneNumber(auth, phoneNumber, autoVerifyTimeoutOrForceResend, forceResend) {
+  const _auth = _getUnderlyingAuth(auth);
+  return _auth.verifyPhoneNumber(phoneNumber, autoVerifyTimeoutOrForceResend, forceResend);
 }
 
 /*

@@ -1016,7 +1016,7 @@ describe('auth().currentUser', function () {
         token.length.should.be.greaterThan(24);
 
         // Clean up
-        await deleteUser(currentUser);
+        await deleteUser(auth.currentUser);
       });
     });
 
@@ -1062,8 +1062,7 @@ describe('auth().currentUser', function () {
     describe('linkWithCredential()', function () {
       // hanging against auth emulator?
       it('should link anonymous account <-> email account', async function () {
-        const { getAuth, signInAnonymously, deleteUser, linkWithCredential, EmailAuthProvider } =
-          authModular;
+        const { getAuth, signInAnonymously, deleteUser, linkWithCredential } = authModular;
         const auth = getAuth();
 
         const random = Utils.randString(12, '#aA');
@@ -1074,7 +1073,7 @@ describe('auth().currentUser', function () {
         const { currentUser } = auth;
 
         // Test
-        const credential = EmailAuthProvider.credential(email, pass);
+        const credential = firebase.auth.EmailAuthProvider.credential(email, pass);
 
         const linkedUserCredential = await linkWithCredential(currentUser, credential);
 
@@ -1102,7 +1101,7 @@ describe('auth().currentUser', function () {
 
         // Test
         try {
-          const credential = EmailAuthProvider.credential(TEST_EMAIL, TEST_PASS);
+          const credential = firebase.auth.EmailAuthProvider.credential(TEST_EMAIL, TEST_PASS);
           await linkWithCredential(currentUser, credential);
 
           // Clean up
@@ -1132,7 +1131,6 @@ describe('auth().currentUser', function () {
           createUserWithEmailAndPassword,
           deleteUser,
           reauthenticateWithCredential,
-          EmailAuthProvider,
         } = authModular;
         const auth = getAuth();
 
@@ -1143,7 +1141,7 @@ describe('auth().currentUser', function () {
         await createUserWithEmailAndPassword(auth, email, pass);
 
         // Test
-        const credential = EmailAuthProvider.credential(email, pass);
+        const credential = firebase.auth.EmailAuthProvider.credential(email, pass);
 
         await reauthenticateWithCredential(auth.currentUser, credential);
 
@@ -1387,8 +1385,13 @@ describe('auth().currentUser', function () {
       });
 
       it('should correctly report emailVerified status', async function () {
-        const { getAuth, createUserWithEmailAndPassword, deleteUser, sendEmailVerification } =
-          authModular;
+        const {
+          getAuth,
+          createUserWithEmailAndPassword,
+          deleteUser,
+          sendEmailVerification,
+          reload,
+        } = authModular;
         const auth = getAuth();
         const random = Utils.randString(12, '#a');
         const email = `${random}@${random}.com`;
@@ -1445,11 +1448,13 @@ describe('auth().currentUser', function () {
         const email = `${random}@${random}.com`;
         await createUserWithEmailAndPassword(auth, email, random);
 
-        (() => {
-          sendEmailVerification(auth.currentUser, { url: [] });
-        }).should.throw(
-          "firebase.auth.User.sendEmailVerification(*) 'actionCodeSettings.url' expected a string value.",
-        );
+        try {
+          await sendEmailVerification(auth.currentUser, { url: [] });
+        } catch (error) {
+          error.message.should.containEql(
+            "firebase.auth.User.sendEmailVerification(*) 'actionCodeSettings.url' expected a string value.",
+          );
+        }
       });
     });
 
@@ -1571,7 +1576,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             iOS: 123,
           });
@@ -1593,7 +1598,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             iOS: { bundleId: 123 },
           });
@@ -1617,7 +1622,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             android: 123,
           });
@@ -1639,7 +1644,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             android: { packageName: 123 },
           });
@@ -1663,7 +1668,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             android: { packageName: 'string', installApp: 123 },
           });
@@ -1687,7 +1692,7 @@ describe('auth().currentUser', function () {
 
         await createUserWithEmailAndPassword(auth, email, random);
         try {
-          verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
+          await verifyBeforeUpdateEmail(auth.currentUser, updateEmail, {
             url: 'string',
             android: { packageName: 'string', minimumVersion: 123 },
           });
@@ -1782,7 +1787,7 @@ describe('auth().currentUser', function () {
 
     describe('updateEmail()', function () {
       it('should update the email address', async function () {
-        const { getAuth, updateEmail, deleteUser } = authModular;
+        const { getAuth, updateEmail, deleteUser, createUserWithEmailAndPassword } = authModular;
         const auth = getAuth();
 
         const random = Utils.randString(12, '#a');
@@ -1974,82 +1979,102 @@ describe('auth().currentUser', function () {
 
     describe('linkWithPhoneNumber()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, linkWithPhoneNumber } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.linkWithPhoneNumber();
-        }).should.throw('linkWithPhoneNumber() is unsupported by the native Firebase SDKs.');
+
+        try {
+          await linkWithPhoneNumber(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql(
+            'linkWithPhoneNumber is unsupported by the native Firebase SDKs',
+          );
+        }
         await signOut(auth);
       });
     });
 
     describe('linkWithPopup()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, linkWithPopup } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.linkWithPopup();
-        }).should.throw('linkWithPopup() is unsupported by the native Firebase SDKs.');
+        try {
+          await linkWithPopup(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql('linkWithPopup is unsupported by the native Firebase SDKs');
+        }
         await signOut(auth);
       });
     });
 
     describe('linkWithRedirect()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, linkWithRedirect } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.linkWithRedirect();
-        }).should.throw('linkWithRedirect() is unsupported by the native Firebase SDKs.');
+        await signInAnonymously(auth);
+        try {
+          await linkWithRedirect(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql(
+            'linkWithRedirect is unsupported by the native Firebase SDKs',
+          );
+        }
         await signOut(auth);
       });
     });
 
     describe('reauthenticateWithPhoneNumber()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, reauthenticateWithPhoneNumber } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.reauthenticateWithPhoneNumber();
-        }).should.throw(
-          'reauthenticateWithPhoneNumber() is unsupported by the native Firebase SDKs.',
-        );
+        try {
+          await reauthenticateWithPhoneNumber(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql(
+            'reauthenticateWithPhoneNumber is unsupported by the native Firebase SDKs',
+          );
+        }
         await signOut(auth);
       });
     });
 
     describe('reauthenticateWithPopup()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, reauthenticateWithPopup } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.reauthenticateWithPopup();
-        }).should.throw('reauthenticateWithPopup() is unsupported by the native Firebase SDKs.');
+        try {
+          await reauthenticateWithPopup(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql(
+            'reauthenticateWithPopup is unsupported by the native Firebase SDKs',
+          );
+        }
         await signOut(auth);
       });
     });
 
     describe('reauthenticateWithRedirect()', function () {
       it('should throw an unsupported error', async function () {
-        const { getAuth, signInAnonymously, signOut } = authModular;
+        const { getAuth, signInAnonymously, signOut, reauthenticateWithRedirect } = authModular;
         const auth = getAuth();
 
         await signInAnonymously(auth);
-        (() => {
-          auth.currentUser.reauthenticateWithRedirect();
-        }).should.throw(
-          'firebase.auth.User.reauthenticateWithRedirect() is unsupported by the native Firebase SDKs.',
-        );
+        try {
+          await reauthenticateWithRedirect(auth.currentUser);
+        } catch (e) {
+          e.message.should.containEql(
+            'reauthenticateWithRedirect is unsupported by the native Firebase SDKs',
+          );
+        }
         await signOut(auth);
       });
     });

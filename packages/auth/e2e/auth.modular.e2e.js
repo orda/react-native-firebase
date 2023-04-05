@@ -1109,7 +1109,7 @@ describe('auth() modular', function () {
     });
   });
 
-  describe.only('modular', function () {
+  describe('modular', function () {
     before(async function () {
       const { createUserWithEmailAndPassword, getAuth } = authModular;
 

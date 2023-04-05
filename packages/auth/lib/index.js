@@ -98,6 +98,7 @@ export {
   useUserAccessGroup,
   verifyBeforeUpdateEmail,
   verifyPasswordResetCode,
+  verifyPhoneNumber,
 } from './modular/index';
 
 const statics = {

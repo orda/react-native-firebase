@@ -280,12 +280,11 @@ describe('auth() => Phone', function () {
       it('throws an error with an invalid on event', async function () {
         const { getAuth, verifyPhoneNumber } = authModular;
 
-        const defaultApp = firebase.app();
-        const defaultAuth = getAuth(defaultApp);
-
+        const auth = getAuth();
         const testPhone = getRandomPhoneNumber();
+
         try {
-          await verifyPhoneNumber(defaultAuth, testPhone).on('example', () => {});
+          await verifyPhoneNumber(auth, testPhone).on('example', () => {});
 
           return Promise.reject(new Error('Did not throw Error.'));
         } catch (e) {
