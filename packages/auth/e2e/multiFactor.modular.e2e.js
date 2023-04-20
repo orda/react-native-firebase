@@ -507,7 +507,7 @@ describe('multi-factor modular', function () {
     });
   });
 
-  describe.only('modular', function () {
+  describe('modular', function () {
     beforeEach(async function () {
       const { createUserWithEmailAndPassword, getAuth, signOut } = authModular;
 
