@@ -3,7 +3,7 @@ const TEST_PASS = 'test1234';
 
 const { clearAllUsers } = require('./helpers');
 
-describe.only('auth()', function () {
+describe('auth()', function () {
   describe('firebase v8 compatibility', function () {
     before(async function () {
       try {

@@ -23,15 +23,17 @@ import {
   isValidUrl,
 } from '@react-native-firebase/app/lib/common';
 import {
-  createModuleNamespace,
   FirebaseModule,
+  createModuleNamespace,
   getFirebaseRoot,
 } from '@react-native-firebase/app/lib/internal';
 import ConfirmationResult from './ConfirmationResult';
-import { getMultiFactorResolver } from './getMultiFactorResolver';
-import { multiFactor, MultiFactorUser } from './multiFactor';
 import PhoneAuthListener from './PhoneAuthListener';
 import PhoneMultiFactorGenerator from './PhoneMultiFactorGenerator';
+import Settings from './Settings';
+import User from './User';
+import { getMultiFactorResolver } from './getMultiFactorResolver';
+import { MultiFactorUser, multiFactor } from './multiFactor';
 import AppleAuthProvider from './providers/AppleAuthProvider';
 import EmailAuthProvider from './providers/EmailAuthProvider';
 import FacebookAuthProvider from './providers/FacebookAuthProvider';
@@ -41,8 +43,6 @@ import OAuthProvider from './providers/OAuthProvider';
 import OIDCAuthProvider from './providers/OIDCAuthProvider';
 import PhoneAuthProvider from './providers/PhoneAuthProvider';
 import TwitterAuthProvider from './providers/TwitterAuthProvider';
-import Settings from './Settings';
-import User from './User';
 import version from './version';
 
 export {
@@ -100,6 +100,19 @@ export {
   verifyPasswordResetCode,
   verifyPhoneNumber,
 } from './modular/index';
+// For modular imports
+export {
+  AppleAuthProvider,
+  EmailAuthProvider,
+  PhoneAuthProvider,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  TwitterAuthProvider,
+  FacebookAuthProvider,
+  PhoneMultiFactorGenerator,
+  OAuthProvider,
+  OIDCAuthProvider,
+};
 
 const statics = {
   AppleAuthProvider,
