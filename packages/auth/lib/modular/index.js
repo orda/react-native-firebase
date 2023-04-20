@@ -372,7 +372,7 @@ export async function linkWithRedirect(user, provider, resolver) {
  * The MultiFactorUser corresponding to the user.
  */
 export function multiFactor(user) {
-  return user.multiFactor;
+  return user._auth.multiFactor(user);
 }
 
 /*

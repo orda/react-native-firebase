@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /*
  * Copyright (c) 2016-present Invertase Limited & Contributors
  *
@@ -18,8 +19,8 @@
 const providerId = 'phone';
 
 export default class PhoneAuthProvider {
-  constructor() {
-    throw new Error('`new PhoneAuthProvider()` is not supported on the native Firebase SDKs.');
+  constructor(auth) {
+    this._auth = auth;
   }
 
   static get PROVIDER_ID() {
@@ -32,5 +33,17 @@ export default class PhoneAuthProvider {
       secret: code,
       providerId,
     };
+  }
+
+  verifyPhoneNumber(phoneInfoOptions, appVerifier) {
+    if (phoneInfoOptions.multiFactorHint) {
+      return this._auth.app
+        .auth()
+        .verifyPhoneNumberWithMultiFactorInfo(
+          phoneInfoOptions.multiFactorHint,
+          phoneInfoOptions.session,
+        );
+    }
+    return this._auth.app.auth().verifyPhoneNumberForMultiFactor(phoneInfoOptions);
   }
 }
