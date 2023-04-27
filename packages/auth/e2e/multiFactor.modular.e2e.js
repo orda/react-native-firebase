@@ -606,7 +606,7 @@ describe('multi-factor modular', function () {
         const {
           signInWithEmailAndPassword,
           getAuth,
-          authPhoneMultiFactor,
+          // authPhoneMultiFactor,
           getMultiFactorResolver,
         } = authModular;
 
