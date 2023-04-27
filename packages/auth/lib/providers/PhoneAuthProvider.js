@@ -20,6 +20,9 @@ const providerId = 'phone';
 
 export default class PhoneAuthProvider {
   constructor(auth) {
+    if (auth === undefined) {
+      throw new Error('`new PhoneAuthProvider()` is not supported on the native Firebase SDKs.');
+    }
     this._auth = auth;
   }
 
