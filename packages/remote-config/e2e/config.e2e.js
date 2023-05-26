@@ -15,6 +15,8 @@
  *
  */
 
+const { updateTemplate } = require('./helpers');
+
 describe('remoteConfig() modular', function () {
   describe('firebase v8 compatibility', function () {
     describe('fetch()', function () {
@@ -330,6 +332,71 @@ describe('remoteConfig() modular', function () {
 
           should(reset).equal(null);
         }
+      });
+    });
+    describe.only('addOnUpdateListener()', function () {
+      before(async function () {
+        console.error('initializing template data fixture');
+        const response = await updateTemplate({
+          operations: {
+            delete: ['rttest_param1', 'rttest_param2', 'rttest_param3'],
+          },
+        });
+        response.result.should.equal('success');
+      });
+      after(async function () {
+        console.error('cleaning template data fixture');
+        const response = await updateTemplate({
+          operations: {
+            delete: ['rttest_param1', 'rttest_param2', 'rttest_param3'],
+          },
+        });
+        response.result.should.equal('success');
+      });
+      // TODO:
+      // - implement native listener count method for test only
+      // - single listener:
+      //   - verify native listener count is zero
+      //   - add a listener, call function to set value, make sure listener is called
+      //   - verify native listener count is one
+      //   - remove the listener, call function to set value, make sure listener is not called
+      //   - verify native listener count is zero again
+      it.only('adds a listener', async function () {
+        try {
+          const response = await updateTemplate({
+            operations: {
+              add: [{ name: 'rttest_param1', value: Date.now() + '' }],
+            },
+          });
+          response.data.should.equal('success');
+          console.log('checking single listener functionality');
+        } catch (e) {
+          console.log('unable to update template:', e);
+        }
+      });
+      // - multiple listeners:
+      //   - verify native listener count is zero
+      //   - add three listeners, call function to set value, make sure listeners are called
+      //   - remove second listener, call function to set value, make sure only first/third are called
+      //   - remove first/third listeners, call function to set value, make sure no listeners are called
+      it('manages multiple listeners', async function () {
+        console.log('checking multiple listener functionality');
+      });
+      // - react-native reload
+      //   - make sure native count is zero
+      //   - add a listener, assert native count one
+      //   - rnReload via detox, assert native count is zero
+      it('handles react-native reload', async function () {
+        console.log('checking listener functionality across javascript layer reload');
+      });
+      // - test update contents
+      //   - add listener
+      //   - set a default value for a parameter and fetch it to verify source is local
+      //   - update the parameter via function and verify that listener is called with that key and server value now
+      //   - delete the parameter and make sure the listener is called with delete
+      //   - add the parameter and verify listener is called with added param    describe('addOnUpdateListener()', function () {
+      it('receives updates correctly', async function () {
+        console.log('checking listener update functionality');
       });
     });
   });

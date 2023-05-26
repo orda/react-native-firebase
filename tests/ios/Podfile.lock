@@ -890,7 +890,7 @@ PODS:
     - Libuv-gRPC (= 0.0.10)
   - gRPC-Core/Interface (1.44.0)
   - GTMSessionFetcher/Core (3.1.0)
-  - hermes-engine (0.70.6)
+  - hermes-engine (0.70.7)
   - Jet (0.8.2):
     - React-Core
   - leveldb-library (1.22.1)
@@ -1526,7 +1526,7 @@ SPEC CHECKSUMS:
   "gRPC-C++": 9675f953ace2b3de7c506039d77be1f2e77a8db2
   gRPC-Core: 943e491cb0d45598b0b0eb9e910c88080369290b
   GTMSessionFetcher: c9e714f7eec91a55641e2bab9f45fd83a219b882
-  hermes-engine: 2af7b7a59128f250adfd86f15aa1d5a2ecd39995
+  hermes-engine: 566e656aa95456a3f3f739fd76ea9a9656f2633f
   Jet: 749a4d53291c852ea5a888371411654848079aef
   leveldb-library: 50c7b45cbd7bf543c81a468fe557a16ae3db8729
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
@@ -1583,4 +1583,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 99cabbfe87c312125518c3c570f54e7e137c4df7
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.12.0
