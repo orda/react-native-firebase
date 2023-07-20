@@ -35,8 +35,6 @@ describe('firestore.WriteBatch.commit()', function () {
     xit('throws if committing more than 500 writes', async function () {
       const filledArray = new Array(501).fill({ foo: 'bar' });
       const batch = firebase.firestore().batch();
-      const filledArray = new Array(501).fill({ foo: 'bar' });
-      const batch = firebase.firestore().batch();
 
       for (let i = 0; i < filledArray.length; i++) {
         const doc = firebase.firestore().collection(COLLECTION).doc(i.toString());
