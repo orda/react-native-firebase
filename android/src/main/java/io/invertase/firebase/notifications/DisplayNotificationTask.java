@@ -471,12 +471,15 @@ public class DisplayNotificationTask extends AsyncTask<Void, Void, Void> {
     }
 
     String notificationId = notification.getString("notificationId");
-    return PendingIntent.getActivity(
-      context,
-      notificationId.hashCode(),
-      intent,
-      PendingIntent.FLAG_UPDATE_CURRENT
-    );
+    // return PendingIntent.getActivity(
+    //   context,
+    //   notificationId.hashCode(),
+    //   intent,
+    //   PendingIntent.FLAG_UPDATE_CURRENT
+    // );
+    // Targeting S+ (version 31 and above) requires that one of FLAG_IMMUTABLE or FLAG_MUTABLE be specified when creating a PendingIntent.
+    int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+    return PendingIntent.getActivity(context, notificationId.hashCode(), intent, flags);
   }
 
   private PendingIntent createBroadcastIntent(Context context, Bundle notification, String action) {
@@ -488,12 +491,14 @@ public class DisplayNotificationTask extends AsyncTask<Void, Void, Void> {
     intent.putExtra("notification", notification);
     intent.setAction("io.invertase.firebase.notifications.BackgroundAction");
 
-    return PendingIntent.getBroadcast(
-      context,
-      notificationId.hashCode(),
-      intent,
-      PendingIntent.FLAG_UPDATE_CURRENT
-    );
+    // return PendingIntent.getBroadcast(
+    //   context,
+    //   notificationId.hashCode(),
+    //   intent,
+    //   PendingIntent.FLAG_UPDATE_CURRENT
+    // );
+    int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+    return PendingIntent.getBroadcast(context, notificationId.hashCode(), intent, flags);
   }
 
   private RemoteInput createRemoteInput(Bundle remoteInput) {
